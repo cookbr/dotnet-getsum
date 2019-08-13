@@ -3,15 +3,15 @@ using Newtonsoft.Json.Serialization;
 
 namespace Cookbr.Getsum.ConsoleApp
 {
-	public abstract class HandlerResponse
+	public abstract class ArgumentsHandlerResponse
 	{
 	}
 
-	public sealed class HandlerResponse<T> : HandlerResponse
+	public sealed class ArgumentsHandlerResponse<T> : ArgumentsHandlerResponse
 	{
 		private readonly T response;
 
-		public HandlerResponse(T response)
+		public ArgumentsHandlerResponse(T response)
 		{
 			this.response = response;
 		}

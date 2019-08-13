@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Threading.Tasks;
-using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -12,12 +11,15 @@ namespace Cookbr.Getsum.ConsoleApp
 		{
 			var serviceProvider = CreateServiceProvider();
 
-			var parser = serviceProvider.GetService<IArgsParser>();
-			if (!parser.TryParse(args, out var request))
+			var argumentsParser = serviceProvider.GetService<IArgumentsParser>();
+			if (!argumentsParser.TryParse(args, out var arguments))
 				return 1;
 
-			var mediator = serviceProvider.GetService<IMediator>();
-			Console.WriteLine(await mediator.Send(request));
+			var argumentsHandlerType = typeof(IArgumentsHandler<>).MakeGenericType(arguments.GetType());
+			var argumentsHandler = (IArgumentsHandler)serviceProvider.GetService(argumentsHandlerType);
+			var argumentsHandlerResponse = await argumentsHandler.Handle(arguments);
+
+			Console.WriteLine(argumentsHandlerResponse);
 			return 0;
 		}
 
@@ -25,10 +27,14 @@ namespace Cookbr.Getsum.ConsoleApp
 		{
 			var services = new ServiceCollection()
 				.AddLogging(builder => builder.AddConsole())
-				.AddMediatR(typeof(Program).Assembly);
+				.Scan(scan => scan
+					.FromAssembliesOf(typeof(IArgumentsHandler<>))
+					.AddClasses(classes => classes.AssignableTo(typeof(IArgumentsHandler<>)))
+					.AsImplementedInterfaces()
+				);
 
 			return services
-				.AddSingleton<IArgsParser>(_ => new ArgsParser(services))
+				.AddSingleton<IArgumentsParser>(_ => new ArgumentsParser(services))
 				.BuildServiceProvider();
 		}
 	}
